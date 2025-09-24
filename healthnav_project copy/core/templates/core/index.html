@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>HealthNav - Django</title>
+    <style>
+      /* Your CSS from the previous example goes here */
+      body {
+        font-family: sans-serif;
+        background-color: #f4f7f6;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2 {
+        color: #0056b3;
+        border-bottom: 2px solid #eef;
+        padding-bottom: 10px;
+      }
+      .module {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        margin-top: 20px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .options-box button {
+        margin: 5px;
+        background-color: #5a6268;
+      }
+      #results-list li {
+        background-color: #e9ecef;
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 4px;
+      }
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 4px solid #3498db;
+        width: 20px;
+        height: 20px;
+        animation: spin 2s linear infinite;
+        display: none;
+        margin: 10px 0;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🏥 Project HealthNav (Django Backend)</h1>
+    <button id="start-btn">Click to Start Diagnosis</button>
+
+    <div id="symptom-checker" class="module" style="display: none">
+      <h2>Symptom Checker</h2>
+      <div id="question-area"></div>
+    </div>
+    <div id="queue-status" class="module" style="display: none">
+      <h2>Queue Status</h2>
+      <p id="queue-message"></p>
+    </div>
+    <div id="pharmacy-locator" class="module" style="display: none">
+      <h2>Nearby Pharmacies</h2>
+      <div id="pharmacy-loader" class="loader"></div>
+      <ul id="results-list"></ul>
+    </div>
+
+    <script>
+      const startBtn = document.getElementById("start-btn");
+      const symptomCheckerDiv = document.getElementById("symptom-checker");
+      const queueStatusDiv = document.getElementById("queue-status");
+      const pharmacyLocatorDiv = document.getElementById("pharmacy-locator");
+      const questionArea = document.getElementById("question-area");
+
+      let userAnswers = [];
+
+      startBtn.addEventListener("click", () => {
+        startBtn.style.display = "none";
+        symptomCheckerDiv.style.display = "block";
+        getNextQuestion();
+      });
+
+      async function getNextQuestion() {
+        const response = await fetch("/api/symptom_check/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: JSON.stringify({ answers: userAnswers }),
+        });
+        const data = await response.json();
+
+        if (data.type === "question") {
+          displayQuestion(data.text, data.options);
+        } else if (data.type === "diagnosis") {
+          handleDiagnosisComplete(data.specialty);
+        }
+      }
+
+      function displayQuestion(text, options) {
+        questionArea.innerHTML = `<p>${text}</p>`;
+        const optionsBox = document.createElement("div");
+        optionsBox.className = "options-box";
+        options.forEach((option) => {
+          const button = document.createElement("button");
+          button.type = "button"; // Prevents page reload
+          button.textContent = option;
+          button.onclick = () => {
+            userAnswers.push(option);
+            getNextQuestion();
+          };
+          optionsBox.appendChild(button);
+        });
+        questionArea.appendChild(optionsBox);
+      }
+
+      function handleDiagnosisComplete(specialty) {
+        symptomCheckerDiv.innerHTML = `<h2>Diagnosis Complete</h2><p>Recommended specialist: <strong>${specialty}</strong></p>`;
+
+        queueStatusDiv.style.display = "block";
+        document.getElementById(
+          "queue-message"
+        ).textContent = `You've been added to the ${specialty} queue. You are number 1 in line (simulation).`;
+
+        pharmacyLocatorDiv.style.display = "block";
+        locateAndShowPharmacies(); // This function is now defined below
+      }
+
+      function locateAndShowPharmacies() {
+        const loader = document.getElementById("pharmacy-loader");
+        const resultsList = document.getElementById("results-list");
+        loader.style.display = "block";
+        resultsList.innerHTML = "";
+
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+
+            const response = await fetch(
+              `/api/find_pharmacies/?lat=${userLat}&lon=${userLon}`
+            );
+            const data = await response.json();
+
+            loader.style.display = "none";
+
+            if (data.pharmacies && data.pharmacies.length > 0) {
+              data.pharmacies.forEach((place) => {
+                const li = document.createElement("li");
+
+                // Create the text part
+                const text = document.createTextNode(
+                  `${place.name} - ${place.vicinity}`
+                );
+                li.appendChild(text);
+
+                // Create the link part
+                const link = document.createElement("a");
+                link.textContent = " (Get Directions)";
+
+                // --- THIS IS THE CORRECTED GOOGLE MAPS URL ---
+                link.href = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLon}&destination=${encodeURIComponent(
+                  place.name
+                )}&destination_place_id=${place.place_id}`;
+                link.target = "_blank";
+
+                li.appendChild(link);
+                resultsList.appendChild(li);
+              });
+            } else {
+              resultsList.innerHTML = `<li>No pharmacies found nearby.</li>`;
+              if (data.error) {
+                resultsList.innerHTML = `<li>Error: ${data.error}</li>`;
+              }
+            }
+          },
+          (error) => {
+            // Handle case where user denies location access
+            loader.style.display = "none";
+            resultsList.innerHTML = `<li>Error: ${error.message}. Please allow location access.</li>`;
+          }
+        );
+      }
+    </script>
+  </body>
+</html>
