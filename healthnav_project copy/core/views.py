@@ -67,8 +67,9 @@ def find_pharmacies_api(request):
 
     try:
         user_point = (float(lat_str), float(lon_str))
-        G = ox.graph_from_point(user_point, dist=25000, network_type='drive')
-
+        user_point = (12.9716, 77.5946) # Test location: Bengaluru City Center
+        G = ox.graph_from_point(user_point, dist=10000, network_type='drive')
+ 
         # --- 2. DEFINE THE HEURISTIC FUNCTION FOR A* ---
         # This function calculates the straight-line distance between two nodes
         def euclidean_dist_heuristic(u, v):
@@ -113,4 +114,9 @@ def find_pharmacies_api(request):
         return JsonResponse({'pharmacies': sorted_results[:5]})
 
     except Exception as e:
+    # This will print the real, detailed error to your terminal
+        print("--- DETAILED ERROR IN API ---")
+        import traceback
+        traceback.print_exc() # This prints the full traceback
+        print("-----------------------------")
         return JsonResponse({'error': f"An error occurred: {str(e)}"}, status=500)

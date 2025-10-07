@@ -1,0 +1,1 @@
+*.pyc\n__pycache__/\n*.py[cod]\n*.class\n*.so\n.Python\ndb.sqlite3\n.env\n.venv\nvenv/\nENV/\nenv/\n.pythonlibs/\n*.log

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Dashboard - {{ specialty }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .queue-count {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .queue-list {
+            list-style: none;
+            padding: 0;
+        }
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+        .queue-item.first {
+            background-color: #d4edda;
+            border-left: 4px solid #27ae60;
+        }
+        .patient-info {
+            font-size: 18px;
+        }
+        .queue-number {
+            font-weight: bold;
+            color: #3498db;
+        }
+        .accept-btn {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .accept-btn:hover {
+            background-color: #229954;
+        }
+        .accept-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .empty-queue {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 18px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ specialty }} Dashboard</h1>
+        <div class="queue-count" id="queue-count">
+            Patients in Queue: <strong>{{ queue_count }}</strong>
+        </div>
+        
+        <ul class="queue-list" id="queue-list">
+            {% if patient_queue %}
+                {% for patient in patient_queue %}
+                <li class="queue-item {% if forloop.first %}first{% endif %}" data-session="{{ patient.session_key }}">
+                    <div class="patient-info">
+                        Position {{ patient.position }}: <span class="queue-number">{{ patient.queue_number }}</span>
+                    </div>
+                    {% if forloop.first %}
+                    <form method="POST" action="{% url 'doctor_accept_patient' specialty=specialty %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="accept-btn">Accept Patient</button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            {% else %}
+                <li class="empty-queue">No patients in queue</li>
+            {% endif %}
+        </ul>
+        
+        <a href="{% url 'doctor_specialty_select' %}" class="back-link">← Change Specialty</a>
+    </div>
+
+    <script>
+        const specialty = "{{ specialty }}";
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/queue/${encodeURIComponent(specialty)}/`;
+        const socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function() {
+            console.log('Doctor dashboard WebSocket connected');
+        };
+        
+        socket.onmessage = function(e) {
+            console.log('Queue updated, refreshing...');
+            location.reload();
+        };
+        
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+        
+        socket.onclose = function() {
+            console.log('WebSocket disconnected');
+            setTimeout(() => location.reload(), 3000);
+        };
+    </script>
+</body>
+</html>

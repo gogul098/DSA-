@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Queue Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .queue-number {
+            font-size: 48px;
+            color: #3498db;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        .position-info {
+            font-size: 24px;
+            color: #555;
+            margin: 20px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .waiting {
+            background-color: #f39c12;
+            color: white;
+        }
+        .next-up {
+            background-color: #27ae60;
+            color: white;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ specialty }} Department</h1>
+        
+        <div class="queue-number" id="queue-number">
+            {{ queue_number }}
+        </div>
+        
+        <div class="position-info" id="position-info">
+            Position: <strong id="position">{{ position }}</strong> of <strong id="total">{{ total }}</strong>
+        </div>
+        
+        <div class="status-badge" id="status-badge">
+            {% if position == 1 %}
+            <span class="next-up">You're Next!</span>
+            {% else %}
+            <span class="waiting">Waiting in Queue</span>
+            {% endif %}
+        </div>
+        
+        <p>Your position will update automatically</p>
+        <a href="{% url 'home' %}" class="back-link">← Back to Home</a>
+    </div>
+
+    <script>
+        const specialty = "{{ specialty }}";
+        const sessionKey = "{{ session_key }}";
+        const queueNumber = "{{ queue_number }}";
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/queue/${encodeURIComponent(specialty)}/`;
+        const socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function() {
+            console.log('WebSocket connected');
+            socket.send(JSON.stringify({
+                'action': 'get_position',
+                'session_key': sessionKey,
+                'queue_number': queueNumber
+            }));
+        };
+        
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.session_key === sessionKey || data.type === 'position_update') {
+                document.getElementById('position').textContent = data.position;
+                document.getElementById('total').textContent = data.total;
+                
+                const statusBadge = document.getElementById('status-badge');
+                if (data.position === 1) {
+                    statusBadge.innerHTML = '<span class="next-up">You\'re Next!</span>';
+                } else {
+                    statusBadge.innerHTML = '<span class="waiting">Waiting in Queue</span>';
+                }
+            }
+        };
+        
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+        
+        socket.onclose = function() {
+            console.log('WebSocket disconnected');
+            setTimeout(() => location.reload(), 3000);
+        };
+    </script>
+</body>
+</html>

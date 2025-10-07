@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Symptom Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .symptom-group {
+            margin: 20px 0;
+        }
+        .symptom-option {
+            margin: 10px 0;
+            padding: 10px;
+        }
+        .symptom-option label {
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .submit-btn:hover {
+            background-color: #2980b9;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select Your Symptoms</h1>
+        <form method="POST" action="{% url 'patient_submit' %}">
+            {% csrf_token %}
+            <div class="symptom-group">
+                {% for symptom in symptoms %}
+                <div class="symptom-option">
+                    <input type="checkbox" id="symptom_{{ forloop.counter }}" name="symptoms" value="{{ symptom }}">
+                    <label for="symptom_{{ forloop.counter }}">{{ symptom }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="submit-btn">Join Queue</button>
+        </form>
+        <a href="{% url 'home' %}" class="back-link">← Back to Home</a>
+    </div>
+</body>
+</html>

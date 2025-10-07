@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HealthNav - Telehealth Queue System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .role-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .role-btn {
+            padding: 20px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .patient-btn {
+            background-color: #3498db;
+            color: white;
+        }
+        .doctor-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+        .role-btn:hover {
+            transform: scale(1.05);
+        }
+        .pharmacy-link {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #ecf0f1;
+        }
+        .pharmacy-link a {
+            color: #27ae60;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .pharmacy-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to HealthNav</h1>
+        <p>Real-Time Telehealth Queue Management System</p>
+        <div class="role-buttons">
+            <a href="{% url 'patient_form' %}" class="role-btn patient-btn">I'm a Patient</a>
+            <a href="{% url 'doctor_specialty_select' %}" class="role-btn doctor-btn">I'm a Doctor</a>
+        </div>
+        <div class="pharmacy-link">
+            <p><a href="{% url 'dijkstra_locator' %}">🏥 Find Nearby Pharmacies</a></p>
+        </div>
+    </div>
+</body>
+</html>
